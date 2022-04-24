@@ -1,4 +1,4 @@
-dyn.load("vecchia")
+dyn.load("../vecchia")
 
 
 vecchia_meanzero_loglik_grad_info_matern <- function(covparms, locs, y, NNarray){

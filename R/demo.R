@@ -2,7 +2,7 @@ source("fit_multi.R")
 
 
 # read in data
-load("data/weather.RData")
+load("../data/weather.RData")
 y_mat <- weather[,c(4,5)]
 locs0 <- weather[,c(1,2,3)]
 

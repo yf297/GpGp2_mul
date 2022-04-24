@@ -1,7 +1,7 @@
 source("R_wrapper.R")
 library(rootSolve)
 
-get_linkfun <- function(covfun_name, pars = NULL){
+get_linkfun <- function(covfun_name, pars = NULL, dim = NULL){
 
 	if(covfun_name == "matern_isotropic"){
         	link <- function(x){ c(exp(x[1]), exp(x[2]), exp(x[3]), exp(x[4])) }

@@ -4,7 +4,13 @@ source("linkfuns.R")
 source("penalties.R")
 source("start_parms.R")
 source("nn.R")
+
+
 fit_bivariate_matern <- function(y_mat, locs0 ){
+	
+	ncomp <- 2
+	pars <- matrix(rep(0,8), nrow = ncomp)
+
 	y1 <- y_mat[,1]
 	y2 <- y_mat[,2]
 
@@ -98,7 +104,7 @@ fit_bivariate_matern <- function(y_mat, locs0 ){
 	# new NNarray
 	NNarray <- find_ordered_nn(locs, 30)
 
-	linkfuns <- get_linkfun("matern_multi_reparam", pars)
+	linkfuns <- get_linkfun("matern_multi_reparam", pars, dim)
 	link <- linkfuns$link
 	dlink <- linkfuns$dlink
 	invlink <- linkfuns$invlink
