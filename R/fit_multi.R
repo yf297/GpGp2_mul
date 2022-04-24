@@ -4,6 +4,7 @@ source("linkfuns.R")
 source("penalties.R")
 source("start_parms.R")
 source("nn.R")
+
 fit_bivariate_matern <- function(y_mat, locs0 ){
 	y1 <- y_mat[,1]
 	y2 <- y_mat[,2]
