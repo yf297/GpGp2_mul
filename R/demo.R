@@ -15,7 +15,7 @@ fit_bivariate_matern(y_mat, locs0)
 
 
 # read in data
-data <- read.csv("data/3a_1_train.csv")
+data <- read.csv("../data/3a_1_train.csv")
 y_mat <- as.matrix(data[1:10000,3:4])
 locs0 <- as.matrix(data[1:10000,1:2])
 
