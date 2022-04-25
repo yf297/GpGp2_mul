@@ -141,7 +141,7 @@ void vecchia_profbeta_likelihood_matern(
                 dySy[j] += Liy0i2 * LidSLi * Liy0i2;
                 vector_add(Xsub, Liy0i2 * LidSLi, dySX + j*p, p);
                 dlogdet[j] += LidSLi;
-               // LidSLi2[j] = LidSLi;
+                LidSLi2[j] = LidSLi;
             }
 
 	    for(int i=0; i<nparms; i++){ for(int j=0; j<i+1; j++){
@@ -306,7 +306,7 @@ void vecchia_profbeta_likelihood_bivariate_matern(
                 dySy[j] += Liy0i2 * LidSLi * Liy0i2;
                 vector_add(Xsub, Liy0i2 * LidSLi, dySX + j*p, p);
                 dlogdet[j] += LidSLi;
-               // LidSLi2[j] = LidSLi;
+                LidSLi2[j] = LidSLi;
             }
 
 	    for(int i=0; i<nparms; i++){ for(int j=0; j<i+1; j++){
