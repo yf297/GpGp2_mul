@@ -1,8 +1,11 @@
-get_start_parms <- function(y, locs, covfun_name, pars = NULL, n1 = NULL){
+get_start_parms <- function(y, X, locs, covfun_name, pars = NULL){
 
     if(covfun_name == "matern_isotropic"){
-    	start_var <- var(y)
-   	start_smooth <- 0.8
+	fitlm <- stats::lm(y ~ X - 1 )
+        vv <- summary(fitlm)$sigma^2
+   	
+	start_var <- summary(fitlm)$sigma^2
+	start_smooth <- 0.8
     	start_nug <- 0.1
     	n <- length(y)
 

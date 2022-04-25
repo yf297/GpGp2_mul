@@ -7,7 +7,8 @@ fisher_opt <- function( likfun, vartheta, link, convtol = 1e-2, max_iter = 40 ){
     loglik <- likobj$loglik        
     grad <- likobj$grad
     info <- likobj$info
- 	
+    betahat <- likobj$betahat
+
    # add a small amount of regularization
     diag(info) <- diag(info) + 0.1*min(diag(info))
  
@@ -79,8 +80,8 @@ fisher_opt <- function( likfun, vartheta, link, convtol = 1e-2, max_iter = 40 ){
         loglik <- likobj$loglik        
         grad <- likobj$grad
         info <- likobj$info
-
-
+	betahat <- likobj$betahat
+	
 
 	stepgrad <- c(crossprod(step,grad))
 
@@ -107,8 +108,9 @@ fisher_opt <- function( likfun, vartheta, link, convtol = 1e-2, max_iter = 40 ){
     ret <- list(
         covparms = link(vartheta), 
         loglik = loglik,
-        grad = likobj$grad,
-        info = likobj$info,
+        grad = grad,
+        info = info,
+	betahat = betahat,
 	norm_grad = norm(grad, type = "2")
 			 
     )

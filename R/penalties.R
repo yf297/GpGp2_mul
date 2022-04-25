@@ -48,9 +48,10 @@ ddpen_loglo <- function(x,tt,aa){
 
 
 
-get_penalty <- function(y,locs, covfun_name){
+get_penalty <- function(y, X, locs,covfun_name){
 
-    vv <- var(y)
+    fitlm <- stats::lm(y ~ X - 1 )
+    vv <- summary(fitlm)$sigma^2
     # by default, no penalty
     pen <- function(x) 0.0
     dpen <- function(x) rep(0,length(x))

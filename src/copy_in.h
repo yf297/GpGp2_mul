@@ -1,12 +1,13 @@
-#ifndef COPY_IN_H
-#define COPY_IN_H
 void copy_in(double*  ysub,
              double*  locsub,
+             double*  Xsub,
              int      bsize,
              double*  y,
              double*  locs,
+             double*  X,
              int      n,
              int      dim,
+             int      p,
              int*     inds,
              int      first_ind){
   
@@ -26,9 +27,11 @@ void copy_in(double*  ysub,
     }  
   }
   
+  for(int k = 0 ; k < p; ++k){
+    for(int j = bsize-1; j >= 0; j--){
+      ii = inds[first_ind + j];
+      Xsub[bsize-1-j + k*bsize] = X[(ii - 1) + k*n];
+    }  
+  }
 
 }
-
-
-
-#endif
