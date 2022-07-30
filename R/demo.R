@@ -1,5 +1,12 @@
-source("fit_multi.R")
+source("R_wrapper.R")
+source("nn.R")
+source("fisher.R")
+source("penalties.R")
+source("linkfuns.R")
+source("start_parms.R")
+source("helper.R")
 source("check.R")
+source("ord.R")
 
 # weather example
 data <- get(load("../data/weather.RData"))
@@ -11,6 +18,11 @@ locs <- as.matrix(data[,2:ncol(data)])
 locs[,ncol(locs)] <- as.numeric( as.factor( locs[,ncol(locs)] ) )
 d <- ncol(locs)-1
 X <- model.matrix(lm( y ~ -1 + as.factor(locs[,ncol(locs)])))    
+ord <- order_completely_random(locs)
+
+y <- y[ord]
+locs <- locs[ord,,drop=FALSE]
+X <- as.matrix( X[ord,,drop=FALSE] )
 NNarray <- nearest_multi_any(locs, 20) 
 
 # some info
