@@ -1,23 +1,14 @@
 library(rootSolve)
-# penalty functions
-
+source("linkfuns.R")
 
 expit <- function(x){ exp(x)/(1+exp(x)) }
-
 intexpit <- function(x){ log(1+exp(x)) }
-
 pen_hi <- function(x,tt,aa){ -tt*intexpit(x-aa) }
-
 dpen_hi <- function(x,tt,aa){ -tt*expit(x-aa) }
-
 ddpen_hi <- function(x,tt,aa){ -tt*expit(x-aa)/(1+exp(x-aa)) }
-    
 pen_lo <- function(x,tt,aa){ -tt*intexpit(-x+aa) }
-
 dpen_lo <- function(x,tt,aa){ +tt*expit(-x+aa) }
-
 ddpen_lo <- function(x,tt,aa){ -tt*expit(-x+aa)/(1+exp(-x+aa)) }
-
 
 pen_loglo <- function(x,tt,aa){ 
     if(x==0){ return(0.0) 
@@ -42,9 +33,6 @@ ddpen_loglo <- function(x,tt,aa){
         return( ddpen_lo(log(x),tt,aa)/x^2 - dpen_lo(log(x),tt,aa)/x^2 )
     }
 }
-
-
-
 
 
 
@@ -114,11 +102,11 @@ get_penalty <- function(y, X, locs,covfun_name){
     }
 
 
-    if(covfun_name == "matern_isotropic"){
-          pen <- function(x){
+    if(covfun_name == "matern"){
+        pen <- function(x){
               pen_nug(x,4) +   pen_sm(x,3) +   pen_var(x,1) + pen_sm_hi(x,3)
           }
-         dpen <- function(x){
+        dpen <- function(x){
              dpen_nug(x,4) +  dpen_sm(x,3) +  dpen_var(x,1) + dpen_sm_hi(x,3)
          }
         ddpen <- function(x){
@@ -126,20 +114,77 @@ get_penalty <- function(y, X, locs,covfun_name){
     }
     
 
-    if(covfun_name == "matern_multi_reparam"){
-    	pen <- function(vartheta){
-		eta <- h(vartheta)
-		delta_B <- eta[2]
-		delta_A <- eta[3]
-		return( -(delta_A^2  + delta_B^2 ))
-	}
+    if(covfun_name == "matern_multi"){
+	pen <- function(x){
+#	    dB <- (logparms[2*neach + 1])^2
+#   	    dA <- (logparms[3*neach + 2])^2 
+#	    link <- get_linkfun("matern_multi", locs)$link
+#	    x <- link(logparms)
+	    p <- 0      
+	    pmats <- multi_parms_mat( x )
+    	    ncomp <- nrow(pmats$variance)
+	    for(j in 1:ncomp){
+                these_parms <- c(pmats[[1]][j,j], pmats[[2]][j,j], pmats[[3]][j,j], pmats[[4]][j,j])
+                ii <- locs[, ncol(locs)] == j
+                pen_obj = get_penalty(
+                    y[ii],
+                    X[ii, , drop=FALSE],
+                    locs[ii, -ncol(locs), drop=FALSE ],
+                    "matern"
+                )
+                p <- p + pen_obj$pen( these_parms )
+            }
+            return(p)
+	    }
 
-        dpen <- function(vartheta){gradient(pen, vartheta)}
-	ddpen <- function(vartheta){hessian(pen, vartheta)}
+	dpen <- function(x){
 
-    }
+            dp <- rep(0, length(x))
+            pmats <- multi_parms_mat( x )
+            ncomp <- nrow(pmats$variance)
 
+	        for(j in 1:ncomp){
+                these_parms <- c(pmats[[1]][j,j], pmats[[2]][j,j], pmats[[3]][j,j], pmats[[4]][j,j])
+                ii <- locs[, ncol(locs)] == j
+                pen_obj = get_penalty(
+                    y[ii],
+                    X[ii, , drop=FALSE],
+                    locs[ii, -ncol(locs), drop=FALSE ],
+                    "matern"
+                )
+                inds <- unlist( multi_matern_parm_index( ncomp, j, j ) )
+                dp[inds] <- dp[inds] + pen_obj$dpen( these_parms )
+            }
+            return(dp)
+        }
+
+        ddpen <- function(x){
+
+            ddp <- matrix(0, length(x), length(x) )
+            pmats <- multi_parms_mat( x )
+            ncomp <- nrow(pmats$variance)
+
+	        for(j in 1:ncomp){
+                these_parms <- c(pmats[[1]][j,j], pmats[[2]][j,j], pmats[[3]][j,j], pmats[[4]][j,j])
+                ii <- locs[, ncol(locs)] == j
+                pen_obj = get_penalty(
+                    y[ii],
+                    X[ii, , drop=FALSE],
+                    locs[ii, -ncol(locs), drop=FALSE ],
+                    "matern"
+                )
+                inds <- unlist( multi_matern_parm_index( ncomp, j, j ) )
+                ddp[inds,inds] <- ddp[inds,inds] + pen_obj$ddpen( these_parms )
+            }
+            #ddpm <- ddpen_logdet_cross_spec(x, effrange)-ddpen_logvar_marg_spec(x,effrange)
+            #ddp <- ddp+fac*ddpm
+            return(ddp)
+        }
+
+
+#        dpen <- function(logparms){rootSolve::gradient(pen,logparms)}
+#	 ddpen <- function(logparms){rootSolve::hessian(pen,logparms)}       
+
+   }
     return( list( pen = pen, dpen = dpen, ddpen = ddpen ) )
-
-}
-
+} 

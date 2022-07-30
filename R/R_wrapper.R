@@ -38,7 +38,7 @@ vecchia_profbeta_loglik_grad_info_matern <- function(covparms, locs, y, X, NNarr
 
 
 
-vecchia_profbeta_loglik_grad_info_bivariate_matern <- function(covparms, locs, y, X, NNarray){
+vecchia_profbeta_loglik_grad_info_matern_multi <- function(covparms, locs, y, X, NNarray){
   
   n <- length(y)
   m <- ncol(NNarray)
@@ -52,7 +52,7 @@ vecchia_profbeta_loglik_grad_info_bivariate_matern <- function(covparms, locs, y
   grad <- rep(0,nparms)
   info <- rep(0, nparms*nparms)
   
-  a <- .C("vecchia_profbeta_likelihood_bivariate_matern",
+  a <- .C("vecchia_profbeta_likelihood_matern_multi",
           ll = as.double(ll),
 	  betahat = as.double(betahat),
           grad = as.double(grad),
@@ -74,16 +74,3 @@ vecchia_profbeta_loglik_grad_info_bivariate_matern <- function(covparms, locs, y
 }
 
 
-con <- function(d, covparms){
-  
-  nparms <-length(covparms)
-  cons <- 0
-  
-  a <- .C("con",
-	  cons = as.double(cons),
-	  as.integer(d),
-          as.double(covparms),
-	  as.integer(nparms))
-
-  return(a$cons)
-}

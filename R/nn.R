@@ -1,8 +1,3 @@
-
-
-# functions to find nearest neighbors and do the grouping operations
-
-
 find_ordered_nn_brute <- function( locs, m ){
      # find the m+1 nearest neighbors to locs[j,] in locs[1:j,]
      # by convention, this includes locs[j,], which is distance 0
@@ -90,5 +85,127 @@ find_ordered_nn <- function(locs,m, lonlat = FALSE, st_scale = NULL){
 }
 
 
+# get nearest neighbors regardless of component
+nearest_multi_any <- function( locs, m ){
+    locs_for_NN <- locs[, -ncol(locs), drop=FALSE ]
+    NNarray <- find_ordered_nn(locs_for_NN, m=m, lonlat = FALSE, st_scale = NULL)
+    return(NNarray)
+}
 
-c
+nearest_multi_pref_this <- function(locs, m ){
+    return( nearest_multi_pref(locs, m, sum_to_m_pref ) )
+}
+
+nearest_multi_balanced <- function(locs, m ){
+    return( nearest_multi_pref(locs, m, sum_to_m_balanced) )
+}
+
+# pass in a function to determine how to allocate the m neighbors to the components
+# see functions below for examples
+nearest_multi_pref <- function( locs, m, alloc_fun ){
+
+    comp <- as.numeric(as.factor( locs[, ncol(locs) ] ))
+    ncomp <- max(locs[,ncol(locs)])
+    locs_for_NN <- locs[, -ncol(locs), drop=FALSE ]
+    n <- nrow(locs)
+
+    # get fac*m nearest neighbors
+    fac <- 5
+    bigNN <- find_ordered_nn( locs_for_NN, m=5*m, lonlat=FALSE, st_scale=NULL )
+
+    # initialize with values in bigNN. This sets it up properly
+    NNarray <- bigNN[ , 1:(m+1) ]
+    
+    # loop over the rows, attempt to get a balanced number from each component
+    for(j in (m+2):n){
+
+        # get the component numbers of the neighbors
+        comp_nn <- comp[ bigNN[j,2:ncol(bigNN)] ] 
+        # count the number of each component
+        table_comp <- rep(0, ncomp)
+        for(k in 1:ncomp){
+            table_comp[k] <- sum( comp_nn == k, na.rm = TRUE )
+        }
+
+        # figure out how many to take from each component
+        # this is a little complicated because we might not have enough from each
+        # the component of this observation
+        num_from_comp <- alloc_fun( table_comp, m, comp[ NNarray[j,1] ] )
+
+        # figure out which num_from_comp[k] neighbors to grab from component k
+        # assumes distances to observations NNarray[j,] are sorted, nearest first
+        inds_row <- c()
+        for(k in 1:ncomp){
+            if( num_from_comp[k] > 0 ){
+                inds_row <- c(inds_row, which( comp_nn == k )[1:num_from_comp[k]])
+            }
+        }
+        inds_row <- sort(inds_row)
+        # add 1 because comp_nn constructed from columns 2 through ncol(bigNN)
+        NNarray[j,2:(m+1)] <- bigNN[j, inds_row+1 ]
+    }
+    return(NNarray)
+}
+
+
+sum_to_m_balanced <- function( counts, m, pref_comp ){
+
+    if( sum(counts) < m ){ stop("insufficient counts") }
+    if( max( abs( counts - round(counts) ) ) > 1e-8 ){ stop("need integer counts") }
+
+    ncomp <- length(counts)
+
+    # initialize with zero
+    num_from_comp <- rep(0, ncomp)
+
+    # get the ordering for how we will loop over components
+    not_pref <- (1:ncomp)[-pref_comp]
+    comp_ord <- c( pref_comp, not_pref[ sample.int(length(not_pref)) ] )
+
+    # try setting count for component l to k
+    for(k in 1:max(counts)){
+        for(l in comp_ord){
+            # try adding one from this component
+            if( sum( num_from_comp ) < m ){
+                if( num_from_comp[l] < counts[l] ){
+                    num_from_comp[l] <- num_from_comp[l] + 1
+                }
+            }
+        }
+        if( sum(num_from_comp) == m ){ break }
+        if( sum(num_from_comp) > m ){ stop("exceeded max # of neighbors") }
+    }
+    return(num_from_comp)
+}
+    
+
+sum_to_m_pref <- function( counts, m, pref_comp ){
+
+    if( sum(counts) < m ){ stop("insufficient counts") }
+    if( max( abs( counts - round(counts) ) ) > 1e-8 ){ stop("need integer counts") }
+
+    ncomp <- length(counts)
+
+    # initialize with zero
+    num_from_comp <- rep(0, ncomp)
+
+    # get the ordering for how we will loop over components
+    not_pref <- (1:ncomp)[-pref_comp]
+    comp_ord <- c( rep(pref_comp,ncomp), not_pref[ sample.int(length(not_pref)) ] )
+
+    # try setting count for component l to k
+    for(k in 1:max(counts)){
+        for(l in comp_ord){
+            # try adding one from this component
+            if( sum( num_from_comp ) < m ){
+                if( num_from_comp[l] < counts[l] ){
+                    num_from_comp[l] <- num_from_comp[l] + 1
+                }
+            }
+        }
+        if( sum(num_from_comp) == m ){ break }
+        if( sum(num_from_comp) > m ){ stop("exceeded max # of neighbors") }
+    }
+    return(num_from_comp)
+}
+    

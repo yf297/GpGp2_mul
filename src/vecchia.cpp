@@ -79,7 +79,7 @@ void vecchia_profbeta_likelihood_matern(
 
         // Compute covariance and cholesky
         copy_in(ysub, locsub, Xsub, bsize, y, locs, X, n, dim, p, NNarray, i*m);
-        matern_isotropic(covmat, dcovmat, bsize, covparms, locsub, dim);
+        matern(covmat, dcovmat, bsize, covparms, locsub, dim, nparms);
         cholesky(covmat, bsize);          
         // Extract last row of inverse cholesky
         transpose_triangular_solve(covmat, choli2, bsize, 1);
@@ -178,7 +178,7 @@ void vecchia_profbeta_likelihood_matern(
 
 
 extern "C" {
-void vecchia_profbeta_likelihood_bivariate_matern(
+void vecchia_profbeta_likelihood_matern_multi(
 			double*  ll,
 			double*  betahat,
                         double*  grad,
@@ -244,7 +244,7 @@ void vecchia_profbeta_likelihood_bivariate_matern(
 
         // Compute covariance and cholesky
         copy_in(ysub, locsub, Xsub, bsize, y, locs, X, n, dim, p, NNarray, i*m);
-        matern_isotropic_bivariate(covmat, dcovmat, bsize, covparms, locsub, dim);
+        matern_multi(covmat, dcovmat, bsize, covparms, locsub, dim, nparms);
         cholesky(covmat, bsize);          
         // Extract last row of inverse cholesky
         transpose_triangular_solve(covmat, choli2, bsize, 1);
