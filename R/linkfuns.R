@@ -181,48 +181,39 @@ get_linkfun <- function(covfun_name, locs){
 	link3 <- function(logparms){
 
 	d <- ncol(locs)-1
-	ncomp <- ncomp_from_nlogparms(length(logparms) )
+	ncomp <- ncomp_from_nlogparms_pars(length(logparms) )
 	neach <- ncomp*(ncomp+1)/2
 	
 	#extract logparms
 	log.sig <- logparms[1:neach]
-	log.ran <- logparms[(neach+1): (2*neach + 1)] 
-	log.smo <- logparms[(2*neach + 2) :(3*neach + 2) ]
-	log.nug <- logparms[(3*neach + 3): length(logparms)]
+	log.ran <- logparms[neach + 1] 
+	log.smo <- logparms[(neach + 2) :(neach + 2 + (ncomp-1)) ]
+	log.nug <- logparms[(neach + 2 + (ncomp-1) + 1): length(logparms)]
 
 	Z <- matrix(NA,ncomp,ncomp)	
 	Z[upper.tri(Z, diag=T)] <- log.sig
 	log.sig <- t(Z)
 
-	log.ran <- log.ran[1:neach]
-	Z[upper.tri(Z, diag=T)] <- log.ran
-	log.ran <- t(Z)
-
-	log.smo <- log.smo[1:neach]
-	Z[upper.tri(Z, diag=T)] <- log.smo
-	log.smo <- t(Z)
-
 	Z[upper.tri(Z, diag=T)] <- log.nug
 	log.nug <- t(Z)
-
 
 	V <- f(t(log.sig)[upper.tri(log.sig)])
 	S <- f(t(log.nug)[upper.tri(log.nug)])        
 
 	marginal.sig <- exp(diag(log.sig))	
-	marginal.ran <- exp(diag(log.ran))   	
-	marginal.smo <- exp(diag(log.smo))   
+	marginal.ran <- exp(log.ran)   	
+	marginal.smo <- exp(log.smo)   
 	marginal.nug <- exp(diag(log.nug))
 	
 	ran <- matrix(NA,ncomp,ncomp)
 	smo <- matrix(NA,ncomp,ncomp)	
-	diag(ran) <- mean(marginal.ran) 
+	diag(ran) <- marginal.ran
 	diag(smo) <- marginal.smo   
 
 	for(i in 2:ncomp){
 	    for(j in 1:(i-1)){
 		smo[i,j] <-  (marginal.smo[i] + marginal.smo[j])/2
-		ran[i,j] <-  mean(marginal.ran)
+		ran[i,j] <- marginal.ran
 
 	    }
 	}

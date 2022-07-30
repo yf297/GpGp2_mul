@@ -23,6 +23,17 @@ ncomp_from_nlogparms <- function( nlogparms ){
 }
 
 
+ncomp_from_nlogparms_pars <- function( nlogparms ){
+    ncomp <- NA
+    for(j in 1:20){
+        if( nlogparms == (j + 1 + 2*(j*(j+1)/2)) ){
+            ncomp <- j
+        }
+    }
+    if( is.na(ncomp) ){ stop("could not determine number of components") }
+    return(ncomp)
+}
+
 
 multi_parms_mat <- function( covparms ){
     ncomp <- ncomp_from_nparms( length(covparms) )

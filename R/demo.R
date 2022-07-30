@@ -16,7 +16,6 @@ data <- get(load("../data/weather.RData"))
 y <- as.vector(data[,1])
 locs <- as.matrix(data[,2:ncol(data)])
 locs[,ncol(locs)] <- as.numeric( as.factor( locs[,ncol(locs)] ) )
-d <- ncol(locs)-1
 X <- model.matrix(lm( y ~ -1 + as.factor(locs[,ncol(locs)])))    
 ord <- order_completely_random(locs)
 
@@ -28,6 +27,7 @@ NNarray <- nearest_multi_any(locs, 20)
 # some info
 ncomp <- length(unique(locs[,ncol(locs)]))
 neach <- ncomp*(ncomp+1)/2
+d <- ncol(locs) - 1
 M <- matrix(0.5, ncomp, ncomp)
 diag(M) <- 1
 
@@ -350,19 +350,20 @@ likfun <- function(logparms){
 
 ####################################################### pars
 start_logparms <- fit_ind$logparms
+inds <- matrix(FALSE, ncomp, ncomp)    
+diag(inds) <- TRUE
+log_marginal_smo_inds <- (2*neach + 1) +  which(t(inds)[upper.tri(inds, diag = TRUE)] == TRUE)
+marginal_ran_inds <- neach + which(t(inds)[upper.tri(inds, diag = TRUE)] == TRUE)  
+log_cross_nug_inds <- (neach + ncomp + 1) + log_cross_var_inds 
+a <- log(mean( fit_ind$covparms[marginal_ran_inds]))
 
-start_logparms[log_cross_ran_inds]  <- log(finv(M)) #irrelavent
-start_logparms[log_delta_B_ind] <- log(0) #irrelavent 
-start_logparms[log_cross_smo_inds]  <-  log(finv(M)) #irrelavent      
-start_logparms[log_delta_A_ind] <- log(0) #irrelavent 
-start_logparms[log_cross_nug_inds] <- 0 #irrelavent 
+start_logparms <- c(start_logparms[1:(neach)],
+		    a,
+		   start_logparms[log_marginal_smo_inds],
+		   start_logparms[(3*neach + 3): length(start_logparms)])
 
 active <- rep(TRUE, length(start_logparms))
-active[c(log_cross_ran_inds,
-	 log_delta_B_ind,
-	 log_cross_smo_inds,
-	 log_delta_A_ind,
-	 log_cross_nug_inds)] <- FALSE
+active[log_cross_nug_inds] <- FALSE
 
 
 fit_pars <- fisher_scoring_multi( 
