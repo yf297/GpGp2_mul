@@ -264,7 +264,7 @@ arma::cube d_matern_multi(arma::vec covparms, arma::mat locs ){
     return dcovmat;
 }
 
-void matern_multi(double*   covmat,
+void matern_multi_c(double*   covmat,
                   double*   dcovmat,
                   int       bsize,
                   double*   covparms, 

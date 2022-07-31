@@ -1,3 +1,4 @@
+library(GpGpm, include.only = "vecchia_profbeta_loglik_grad_info")
 source("R_wrapper.R")
 source("nn.R")
 source("fisher.R")
@@ -7,13 +8,13 @@ source("start_parms.R")
 source("helper.R")
 source("check.R")
 source("ord.R")
-
+library(rcompanion)
 # weather example
-data <- get(load("../data/weather.RData"))
-#data <- data[sample(nrow(data),5000), ]
-
+data <- get(load("../data/b2.RData"))
+nugb <- T
 # load data
 y <- as.vector(data[,1])
+
 locs <- as.matrix(data[,2:ncol(data)])
 locs[,ncol(locs)] <- as.numeric( as.factor( locs[,ncol(locs)] ) )
 X <- model.matrix(lm( y ~ -1 + as.factor(locs[,ncol(locs)])))    
@@ -22,7 +23,7 @@ ord <- order_completely_random(locs)
 y <- y[ord]
 locs <- locs[ord,,drop=FALSE]
 X <- as.matrix( X[ord,,drop=FALSE] )
-NNarray <- nearest_multi_any(locs, 20) 
+NNarray <- nearest_multi_any(locs, 30) 
 
 # some info
 ncomp <- length(unique(locs[,ncol(locs)]))
@@ -86,9 +87,9 @@ likfun <- function(logparms){
     lp <- rep(NA,length(start_logparms))
     lp[active] <- logparms
     lp[!active] <- start_logparms[!active]
-    
-    likobj <- vecchia_profbeta_loglik_grad_info_matern_multi(link(lp),locs, y, X, NNarray)
 
+    likobj <- vecchia_profbeta_loglik_grad_info(link(lp),"matern_multi",y,X,locs,NNarray) 
+	    #vecchia_profbeta_loglik_grad_info_matern_multi(link(lp),locs, y, X, NNarray)
     likobj$loglik <- -likobj$loglik - pen(link(lp))
     likobj$grad <-  as.vector(-likobj$grad%*%dlink(lp) - dpen(link(lp))%*%dlink(lp)) 
     likobj$info <- t(dlink(lp))%*%likobj$info%*%dlink(lp) - t(dlink(lp))%*%ddpen(link(lp))%*%dlink(lp)
@@ -119,7 +120,7 @@ active[c(log_cross_ran_inds,
 	 log_cross_smo_inds,
 	 log_delta_A_ind,
 	 log_cross_nug_inds)] <- FALSE
-
+active[log_cross_nug_inds] <- nugb
 
 fit_flex0 <- fisher_scoring_multi( 
 	    likfun = likfun,
@@ -136,7 +137,7 @@ start_logparms[log_delta_A_ind] <- log(0.01)
 start_logparms[log_cross_nug_inds] <- 0
 
 active <- rep(TRUE, length(start_logparms))
-active[c(log_cross_nug_inds)] <- FALSE
+active[c(log_cross_nug_inds)] <- nugb
 if(ncomp==2){
 	active[log_cross_ran_inds] <- FALSE
 	active[log_cross_smo_inds] <- FALSE  
@@ -167,7 +168,7 @@ likfun <- function(logparms){
     lp[active] <- logparms
     lp[!active] <- start_logparms[!active]
     
-    likobj <- vecchia_profbeta_loglik_grad_info_matern_multi(link(lp),locs, y, X, NNarray)
+    likobj <- vecchia_profbeta_loglik_grad_info(link(lp),"matern_multi",y,X,locs,NNarray)      
 
     likobj$loglik <- -likobj$loglik - pen(link(lp))
     likobj$grad <-  as.vector(-likobj$grad%*%dlink(lp) - dpen(link(lp))%*%dlink(lp)) 
@@ -181,7 +182,7 @@ likfun <- function(logparms){
 
 start_logparms <- invlink(fit_flex$covparms)
 active <- rep(TRUE, length(start_logparms))
-active[c(cross_nug_inds)] <- FALSE
+active[c(cross_nug_inds)] <- nugb
 active[smo_inds] <- FALSE
 
 fit_flex_final <- fisher_scoring_multi( 
@@ -191,10 +192,11 @@ fit_flex_final <- fisher_scoring_multi(
 	    active = active)
 
 delta_A <- exp(fit_flex$logparms[log_delta_A_ind])
-c <- check_flex(fit_flex_final$covparms,d, delta_A)
-if(c && fit_flex_final$loglik > fit_flex$loglik){
+c1 <- check_flex(fit_flex_final$covparms,d,delta_A)
+if(c1 && fit_flex_final$loglik > fit_flex$loglik){
 fit_flex <- fit_flex_final
 }
+
 
 
 
@@ -212,7 +214,7 @@ likfun <- function(logparms){
     lp[active] <- logparms
     lp[!active] <- start_logparms[!active]
     
-    likobj <- vecchia_profbeta_loglik_grad_info_matern_multi(link(lp),locs, y, X, NNarray)
+    likobj <- vecchia_profbeta_loglik_grad_info(link(lp),"matern_multi",y,X,locs,NNarray)      
 
     likobj$loglik <- -likobj$loglik - pen(link(lp))
     likobj$grad <-  as.vector(-likobj$grad%*%dlink(lp) - dpen(link(lp))%*%dlink(lp)) 
@@ -224,44 +226,19 @@ likfun <- function(logparms){
 }
 
 
-
-####################################################### mFlex, deltas 0
-start_logparms <- fit_ind$logparms
-start_logparms <- append(start_logparms, 0, length(start_logparms))
-
-start_logparms[log_cross_ran_inds]  <- log(finv(M)) #irrelavent
-start_logparms[log_delta_B_ind] <- log(0)
-start_logparms[log_cross_smo_inds]  <-  log(finv(M)) #irrelavent      
-start_logparms[log_delta_A_ind] <- log(0) 
-start_logparms[log_cross_nug_inds] <- 0
-start_logparms[log_beta_ind] <- log(0.01)
-
-active <- rep(TRUE, length(start_logparms))
-active[c(log_cross_ran_inds,
-	 log_delta_B_ind,
-	 log_cross_smo_inds,
-	 log_delta_A_ind,
-	 log_cross_nug_inds)] <- FALSE
-
-
-fit_mflex0 <- fisher_scoring_multi( 
-	    likfun = likfun,
-            link = link,
-	    start_logparms = start_logparms, 
-	    active = active)
-###################################################### Flex deltas > 0
+##################################################### mFlex deltas > 0
 start_logparms <- fit_ind$logparms
 start_logparms <- append(start_logparms, 0, length(start_logparms))
 
 start_logparms[log_cross_ran_inds]  <- log(finv(M)) 
-start_logparms[log_delta_B_ind] <- log(0.01)
+start_logparms[log_delta_B_ind] <- log(5)
 start_logparms[log_cross_smo_inds]  <-  log(finv(M)) 
 start_logparms[log_delta_A_ind] <- log(0.01) 
 start_logparms[log_cross_nug_inds] <- 0
-start_logparms[log_beta_ind] <- log(0.01)
+start_logparms[log_beta_ind] <- log(5)
 
 active <- rep(TRUE, length(start_logparms))
-active[c(log_cross_nug_inds)] <- FALSE
+active[c(log_cross_nug_inds)] <- nugb
 if(ncomp==2){
 	active[log_cross_ran_inds] <- FALSE
 	active[log_cross_smo_inds] <- FALSE  
@@ -277,10 +254,7 @@ fit_mflex1 <- fisher_scoring_multi(
 
 ##################################################### mFlex
 
-fit_mflex <- fit_mflex0
-if(fit_mflex1$loglik > fit_mflex0$loglik){
 fit_mflex <- fit_mflex1
-}
 
 # change link and likfun
 linkfuns <- get_linkfun("matern_multi", locs)
@@ -294,7 +268,7 @@ likfun <- function(logparms){
     lp[active] <- logparms
     lp[!active] <- start_logparms[!active]
     
-    likobj <- vecchia_profbeta_loglik_grad_info_matern_multi(link(lp),locs, y, X, NNarray)
+    likobj <- vecchia_profbeta_loglik_grad_info(link(lp),"matern_multi",y,X,locs,NNarray)      
 
     likobj$loglik <- -likobj$loglik - pen(link(lp))
     likobj$grad <-  as.vector(-likobj$grad%*%dlink(lp) - dpen(link(lp))%*%dlink(lp)) 
@@ -308,7 +282,7 @@ likfun <- function(logparms){
 
 start_logparms <- invlink(fit_mflex$covparms)
 active <- rep(TRUE, length(start_logparms))
-active[c(cross_nug_inds)] <- FALSE
+active[c(cross_nug_inds)] <- nugb
 
 fit_mflex_final <- fisher_scoring_multi( 
 	    likfun = likfun,
@@ -317,8 +291,8 @@ fit_mflex_final <- fisher_scoring_multi(
 	    active = active)
 
 beta <- exp(fit_mflex$logparms[log_beta_ind])
-c <- check_mflex(fit_mflex$covparms,beta)
-if(c && fit_mflex_final$loglik > fit_mflex$loglik){
+c2 <- check_mflex(fit_mflex_final$covparms,beta)
+if(c2 && fit_mflex_final$loglik > fit_mflex$loglik){
 fit_mflex <- fit_mflex_final
 }
 
@@ -335,7 +309,8 @@ likfun <- function(logparms){
     lp[active] <- logparms
     lp[!active] <- start_logparms[!active]
     
-    likobj <- vecchia_profbeta_loglik_grad_info_matern_multi(link(lp),locs, y, X, NNarray)
+    likobj <- vecchia_profbeta_loglik_grad_info(link(lp),"matern_multi",y,X,locs,NNarray)      
+	    #vecchia_profbeta_loglik_grad_info_matern_multi(link(lp),locs, y, X, NNarray)
 
     likobj$loglik <- -likobj$loglik - pen(link(lp))
     likobj$grad <-  as.vector(-likobj$grad%*%dlink(lp) - dpen(link(lp))%*%dlink(lp)) 
@@ -363,7 +338,7 @@ start_logparms <- c(start_logparms[1:(neach)],
 		   start_logparms[(3*neach + 3): length(start_logparms)])
 
 active <- rep(TRUE, length(start_logparms))
-active[log_cross_nug_inds] <- FALSE
+active[log_cross_nug_inds] <- nugb
 
 
 fit_pars <- fisher_scoring_multi( 
@@ -376,6 +351,5 @@ fit_pars <- fisher_scoring_multi(
 
 parms <- rbind(fit_ind$covparms,fit_pars$covparms, fit_flex$covparms, fit_mflex$covparms)
 lls <- c(fit_ind$loglik,fit_pars$loglik, fit_flex$loglik, fit_mflex$loglik)
-dat <- cbind(parms, lls)
-print(dat)
-
+dat <- round(cbind(parms, lls),2)
+write.csv(dat,file =  "we.csv")

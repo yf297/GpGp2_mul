@@ -244,7 +244,7 @@ void vecchia_profbeta_likelihood_matern_multi(
 
         // Compute covariance and cholesky
         copy_in(ysub, locsub, Xsub, bsize, y, locs, X, n, dim, p, NNarray, i*m);
-        matern_multi(covmat, dcovmat, bsize, covparms, locsub, dim, nparms);
+        matern_multi_c(covmat, dcovmat, bsize, covparms, locsub, dim, nparms);
         cholesky(covmat, bsize);          
         // Extract last row of inverse cholesky
         transpose_triangular_solve(covmat, choli2, bsize, 1);

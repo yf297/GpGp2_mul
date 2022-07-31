@@ -33,7 +33,7 @@ order_cycle_component_random <- function(locs){
     unique_comps <- unique( locs[, ncol(locs)] )
     ncomp <- length( unique_comps )
     inds_of_comp <- list()
-    for(j in 1:nomp){
+    for(j in 1:ncomp){
         inds_of_comp[[ unique_comps[j] ]] <- which( locs[, ncol(locs)] == unique_comps[j] )
     }
 

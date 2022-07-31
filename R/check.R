@@ -48,8 +48,8 @@ check_flex <- function(covparms,d, delta_A){
 	}
    }
 
-  b1 <- is.positive.semi.definite(con*var)
-  b2 <-  is.cnd(rann2)
+  b1 <- is.positive.semi.definite(round(con*var,9))
+  b2 <-  is.cnd(round(rann2,9))
 
   return(b1 && b2)
 }
@@ -86,7 +86,7 @@ check_mflex <- function(covparms, beta){
 
   b0 <- is.cnd(smo) 
   b1 <- is.positive.semi.definite(con*var)
-  b2 <- is.cnd(rann2 -beta*smo)
+  b2 <- is.cnd(round(rann2 -beta*smo,9))
 
   return(b0 && b1 && b2 )
 }

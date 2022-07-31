@@ -139,8 +139,7 @@ get_linkfun <- function(covfun_name, locs){
 	for(i in 2:ncomp){
 	    for(j in 1:(i-1)){
 		smo[i,j] <-  ((marginal.smo[i] + marginal.smo[j])/2) + Delta_A*(1-A[i,j])
-		ran[i,j] <- (((marginal.ran[i]^(-2) + marginal.ran[j]^(-2))/2) + Delta_B*(1-B[i,j]) +
-			     beta*(smo[i,j] - (marginal.smo[i] + marginal.smo[j])/2))^(-1/2)
+		ran[i,j] <- (((marginal.ran[i]^(-2) + marginal.ran[j]^(-2))/2) + Delta_B*(1-B[i,j]) + beta*(smo[i,j] - (marginal.smo[i] + marginal.smo[j])/2))^(-1/2)
 
 	    }
 	}
@@ -176,7 +175,7 @@ get_linkfun <- function(covfun_name, locs){
 	return(c(sig, ran, smo, nug))
 	}
     	
-	dlink2 <- function(logparms){ rootSolve::gradient(link2, logparms, pert = 1e-6)} 
+	dlink2 <- function(logparms){ rootSolve::gradient(link2, logparms,pert = 1e-6)} 
 
 	link3 <- function(logparms){
 
@@ -223,9 +222,10 @@ get_linkfun <- function(covfun_name, locs){
 	for(i in 2:ncomp){
 	    for(j in 1:(i-1)){
 		sig[i,j] <- (marginal.sig[i]*marginal.sig[j])^(1/2)*
-			    V[i,j]*(gamma(smo[i,i] + d/2)^(1/2))/(gamma(smo[i,i])^(1/2))*
-			           (gamma(smo[j,j] + d/2)^(1/2))/(gamma(smo[j,j])^(1/2))* 
-				    gamma(smo[i,j])/gamma(smo[i,j] + d/2)
+			    V[i,j]*((gamma(smo[i,i] + d/2)^(1/2))/(gamma(smo[i,i])^(1/2)))*
+			           ((gamma(smo[j,j] + d/2)^(1/2))/(gamma(smo[j,j])^(1/2)))* 
+				    (gamma(smo[i,j])/gamma(smo[i,j] + d/2))
+
 	    }
 	}
 	diag(sig) <- marginal.sig 
